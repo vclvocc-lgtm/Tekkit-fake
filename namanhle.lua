@@ -34,42 +34,55 @@ local function notify(title, text)
     })
 end
 
--- Biến lưu trạng thái tính năng
+-- Biến cấu hình trạng thái và thông số tùy chỉnh
 local autoAttackEnabled = false
+local napeExtendEnabled = false
+local napeMultiValue = 1.5
+local safeHeight = 3
+local safeDistance = 4
 
--- Vòng lặp tự động chém Titan (Auto Attack)
+-- Vòng lặp xử lý logic ngầm (Auto Attack & Nape Extend)
 task.spawn(function()
     while task.wait(0.1) do
-        if autoAttackEnabled then
-            pcall(function()
-                local player = game.Players.LocalPlayer
-                local character = player.Character
-                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-                local titans = workspace:FindFirstChild("Titans")
-                
-                if rootPart and titans then
-                    for _, titan in pairs(titans:GetChildren()) do
-                        if titan:IsA("Model") then
-                            local hitboxes = titan:FindFirstChild("Hitboxes")
-                            local hit = hitboxes and hitboxes:FindFirstChild("Hit")
-                            local nape = hit and hit:FindFirstChild("Nape")
-                            
-                            if nape then
-                                local distance = (nape.Position - rootPart.Position).Magnitude
-                                if distance < 30 then
-                                    rootPart.CFrame = nape.CFrame + Vector3.new(0, 0, 3)
-                                end
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        local titans = workspace:FindFirstChild("Titans")
+        
+        if titans then
+            for _, titan in pairs(titans:GetChildren()) do
+                if titan:IsA("Model") then
+                    local hitboxes = titan:FindFirstChild("Hitboxes")
+                    local hit = hitboxes and hitboxes:FindFirstChild("Hit")
+                    local nape = hit and hit:FindFirstChild("Nape")
+                    
+                    if nape then
+                        -- 1. Phóng to Hitbox gáy Titan với giá trị tùy chỉnh
+                        if napeExtendEnabled then
+                            nape.Size = Vector3.new(4 * napeMultiValue, 4 * napeMultiValue, 4 * napeMultiValue)
+                            nape.Transparency = 0.8
+                        else
+                            nape.Size = Vector3.new(3, 3, 3)
+                        end
+                        
+                        -- 2. Auto Attack với chiều cao và khoảng cách tùy chỉnh
+                        if autoAttackEnabled and rootPart then
+                            local distance = (nape.Position - rootPart.Position).Magnitude
+                            if distance < 150 then
+                                -- Sử dụng biến safeHeight và safeDistance người dùng tự nhập
+                                local safePosition = nape.CFrame * CFrame.new(0, safeHeight, safeDistance)
+                                rootPart.CFrame = safePosition
                             end
                         end
                     end
                 end
-            end)
+            end
         end
     end
 end)
 
 -- === MAIN TAB ===
-MainTab:CreateSection("Tính năng chính")
+MainTab:CreateSection("Tính năng chiến đấu")
 
 MainTab:CreateToggle({
     Name = "Titan ESP",
@@ -104,15 +117,71 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateToggle({
-    Name = "Auto Attack Titan (Tự động chém)",
+    Name = "Auto Attack Titan (Tự động bám gáy)",
     CurrentValue = false,
     Flag = "auto_attack_toggle",
     Callback = function(Value)
         autoAttackEnabled = Value
         if Value then
-            notify("Auto Attack", "Đã bật tự động chém Titan!")
+            notify("Auto Attack", "Đã bật tự động bám gáy an toàn!")
         else
-            notify("Auto Attack", "Đã tắt tự động chém Titan!")
+            notify("Auto Attack", "Đã tắt tự động chém.")
+        end
+    end,
+})
+
+MainTab:CreateInput({
+    Name = "Độ cao an toàn (Safe Height)",
+    CurrentValue = "3",
+    PlaceholderText = "Mặc định: 3",
+    RemoveTextAfterFocusLost = false,
+    Flag = "safe_height_input",
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num then
+            safeHeight = num
+        end
+    end,
+})
+
+MainTab:CreateInput({
+    Name = "Khoảng cách lùi sau (Safe Distance)",
+    CurrentValue = "4",
+    PlaceholderText = "Mặc định: 4",
+    RemoveTextAfterFocusLost = false,
+    Flag = "safe_distance_input",
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num then
+            safeDistance = num
+        end
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "Nape Extend (Phóng to Hitbox gáy)",
+    CurrentValue = false,
+    Flag = "extend_toggle",
+    Callback = function(Value)
+        napeExtendEnabled = Value
+        if Value then
+            notify("Nape Extend", "Đã phóng to gáy Titan!")
+        else
+            notify("Nape Extend", "Đã trả về kích thước gốc.")
+        end
+    end,
+})
+
+MainTab:CreateInput({
+    Name = "Nape Multi (1 - 3)",
+    CurrentValue = "1.5",
+    PlaceholderText = "Nhập từ 1 đến 3",
+    RemoveTextAfterFocusLost = false,
+    Flag = "multi_input",
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num and num >= 1 and num <= 3 then
+            napeMultiValue = num
         end
     end,
 })
@@ -131,27 +200,6 @@ MainTab:CreateToggle({
     Callback = function(Value) end,
 })
 
-MainTab:CreateToggle({
-    Name = "Nape Extend",
-    CurrentValue = false,
-    Flag = "extend_toggle",
-    Callback = function(Value) end,
-})
-
-MainTab:CreateInput({
-    Name = "Nape Multi (0 - 2)",
-    CurrentValue = "1",
-    PlaceholderText = "Nhập số từ 0 - 2",
-    RemoveTextAfterFocusLost = false,
-    Flag = "multi_input",
-    Callback = function(Text)
-        local num = tonumber(Text)
-        if num and num >= 0 and num <= 2 then
-            -- Xử lý multi
-        end
-    end,
-})
-
 -- === TESTING TAB ===
 TestingTab:CreateSection("Tính năng thử nghiệm")
 
@@ -159,8 +207,6 @@ TestingTab:CreateButton({
     Name = "TP To Refill (Tự động theo Map)",
     Callback = function()
         local foundRefill = nil
-        
-        -- Quét thông minh tìm điểm nạp khí trên mọi map
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj.Name == "Refill" or obj.Name == "GasTank" or obj.Name == "Gas" then
                 if obj:IsA("BasePart") then

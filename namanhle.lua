@@ -9,7 +9,7 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-    Name = "Namanhle Hub | NamAnh UI",
+    Name = "Namanhle Hub | Rayfield UI",
     LoadingTitle = "Đang tải Namanhle Hub...",
     LoadingSubtitle = "by Namanhle",
     ConfigurationSaving = {
@@ -33,6 +33,40 @@ local function notify(title, text)
         Image = 4483362458,
     })
 end
+
+-- Biến lưu trạng thái tính năng
+local autoAttackEnabled = false
+
+-- Vòng lặp tự động chém Titan (Auto Attack)
+task.spawn(function()
+    while task.wait(0.1) do
+        if autoAttackEnabled then
+            pcall(function()
+                local player = game.Players.LocalPlayer
+                local character = player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                local titans = workspace:FindFirstChild("Titans")
+                
+                if rootPart and titans then
+                    for _, titan in pairs(titans:GetChildren()) do
+                        if titan:IsA("Model") then
+                            local hitboxes = titan:FindFirstChild("Hitboxes")
+                            local hit = hitboxes and hitboxes:FindFirstChild("Hit")
+                            local nape = hit and hit:FindFirstChild("Nape")
+                            
+                            if nape then
+                                local distance = (nape.Position - rootPart.Position).Magnitude
+                                if distance < 30 then
+                                    rootPart.CFrame = nape.CFrame + Vector3.new(0, 0, 3)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
 
 -- === MAIN TAB ===
 MainTab:CreateSection("Tính năng chính")
@@ -65,6 +99,20 @@ MainTab:CreateToggle({
                     v:Destroy()
                 end
             end
+        end
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "Auto Attack Titan (Tự động chém)",
+    CurrentValue = false,
+    Flag = "auto_attack_toggle",
+    Callback = function(Value)
+        autoAttackEnabled = Value
+        if Value then
+            notify("Auto Attack", "Đã bật tự động chém Titan!")
+        else
+            notify("Auto Attack", "Đã tắt tự động chém Titan!")
         end
     end,
 })
@@ -108,18 +156,31 @@ MainTab:CreateInput({
 TestingTab:CreateSection("Tính năng thử nghiệm")
 
 TestingTab:CreateButton({
-    Name = "TP To Refill",
+    Name = "TP To Refill (Tự động theo Map)",
     Callback = function()
-        local success, refill = pcall(function()
-            return workspace.Unclimbable.Reloads.GasTanks.Refill
-        end)
+        local foundRefill = nil
+        
+        -- Quét thông minh tìm điểm nạp khí trên mọi map
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj.Name == "Refill" or obj.Name == "GasTank" or obj.Name == "Gas" then
+                if obj:IsA("BasePart") then
+                    foundRefill = obj
+                    break
+                elseif obj:IsA("Model") and obj.PrimaryPart then
+                    foundRefill = obj.PrimaryPart
+                    break
+                end
+            end
+        end
+        
         local char = game.Players.LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        if success and refill and root then
-            root.CFrame = CFrame.new(refill.Position + Vector3.new(0, 2, 0))
+        
+        if foundRefill and root then
+            root.CFrame = CFrame.new(foundRefill.Position + Vector3.new(0, 3, 0))
             notify("Thành công", "Đã dịch chuyển tới trạm nạp khí!")
         else
-            notify("Lỗi", "Không tìm thấy điểm nạp khí!")
+            notify("Lỗi", "Map này không có hoặc chưa tìm thấy điểm nạp khí!")
         end
     end,
 })

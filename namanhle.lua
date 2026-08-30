@@ -44,9 +44,11 @@ local napeMultiplier = 3 -- Giá trị phóng to gáy tùy chỉnh
 local safeHeight = 5
 local safeDistance = 0
 local tweenSpeed = 300
+local customAttackKey = "MouseButton1" -- Phím/Thao tác chém tùy chỉnh mặc định
 
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- ==========================================
 -- HÀM TWEEN MƯỢT CHỐNG RUNG (ĐÃ TỐI ƯU KHÔNG KẸT CHUỘT)
@@ -112,7 +114,7 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 2. Xử lý Auto Attack (Săn toàn map + Tween chống rung + Tự kích hoạt vũ khí chém không kẹt chuột)
+    -- 2. Xử lý Auto Attack (Săn toàn map + Tween chống rung + Mô phỏng phím chém tùy chỉnh mượt mà không kẹt chuột UI)
     if autoAttackEnabled and rootPart and titans then
         pcall(function()
             local closestNape = nil
@@ -138,10 +140,29 @@ RunService.Heartbeat:Connect(function()
                 local targetCFrame = closestNape.CFrame * CFrame.new(0, safeHeight, safeDistance)
                 smoothTweenTo(targetCFrame)
 
-                -- Tự động kích hoạt vũ khí (Tool) để chém mượt mà, KHÔNG gây kẹt chuột/UI
+                -- Kích hoạt vũ khí kết hợp gọi phím chém tùy chỉnh linh hoạt
                 local tool = character:FindFirstChildOfClass("Tool")
                 if tool then
                     tool:Activate()
+                end
+
+                -- Mô phỏng thao tác ấn nút chém đã cài đặt mà không gây kẹt UI
+                if customAttackKey == "MouseButton1" then
+                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                    task.wait(0.05)
+                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                elseif customAttackKey == "Space" then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                elseif customAttackKey == "E" then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                elseif customAttackKey == "F" then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
                 end
             end
         end)
@@ -254,6 +275,18 @@ MainTab:CreateToggle({
             if activeTween then activeTween:Cancel() activeTween = nil end
             notify("Auto Attack", "Đã tắt.")
         end
+    end,
+})
+
+-- Thêm tính năng tùy chỉnh nút chém trực tiếp trên UI
+MainTab:CreateDropdown({
+    Name = "Chọn Nút/Thao Tác Tự Động Chém",
+    Options = {"MouseButton1", "Space", "E", "F"},
+    CurrentOption = "MouseButton1",
+    Flag = "custom_attack_key_dropdown",
+    Callback = function(Option)
+        customAttackKey = Option
+        notify("Cài đặt phím chém", "Đã đổi nút chém thành: " .. Option)
     end,
 })
 

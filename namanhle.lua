@@ -41,38 +41,35 @@ local napeMultiValue = 1.5
 local safeHeight = 3
 local safeDistance = 4
 
--- Vòng lặp xử lý logic ngầm (Auto Attack & Nape Extend)
-task.spawn(function()
-    while task.wait(0.1) do
-        local player = game.Players.LocalPlayer
-        local character = player.Character
-        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-        local titans = workspace:FindFirstChild("Titans")
-        
-        if titans then
-            for _, titan in pairs(titans:GetChildren()) do
-                if titan:IsA("Model") then
-                    local hitboxes = titan:FindFirstChild("Hitboxes")
-                    local hit = hitboxes and hitboxes:FindFirstChild("Hit")
-                    local nape = hit and hit:FindFirstChild("Nape")
+-- Vòng lặp xử lý tốc độ cao (Dùng RunService.Heartbeat để chém cực nhanh theo từng khung hình)
+game:GetService("RunService").Heartbeat:Connect(function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    local titans = workspace:FindFirstChild("Titans")
+    
+    if titans then
+        for _, titan in pairs(titans:GetChildren()) do
+            if titan:IsA("Model") then
+                local hitboxes = titan:FindFirstChild("Hitboxes")
+                local hit = hitboxes and hitboxes:FindFirstChild("Hit")
+                local nape = hit and hit:FindFirstChild("Nape")
+                
+                if nape then
+                    -- 1. Phóng to Hitbox gáy Titan
+                    if napeExtendEnabled then
+                        nape.Size = Vector3.new(4 * napeMultiValue, 4 * napeMultiValue, 4 * napeMultiValue)
+                        nape.Transparency = 0.8
+                    else
+                        nape.Size = Vector3.new(3, 3, 3)
+                    end
                     
-                    if nape then
-                        -- 1. Phóng to Hitbox gáy Titan với giá trị tùy chỉnh
-                        if napeExtendEnabled then
-                            nape.Size = Vector3.new(4 * napeMultiValue, 4 * napeMultiValue, 4 * napeMultiValue)
-                            nape.Transparency = 0.8
-                        else
-                            nape.Size = Vector3.new(3, 3, 3)
-                        end
-                        
-                        -- 2. Auto Attack với chiều cao và khoảng cách tùy chỉnh
-                        if autoAttackEnabled and rootPart then
-                            local distance = (nape.Position - rootPart.Position).Magnitude
-                            if distance < 150 then
-                                -- Sử dụng biến safeHeight và safeDistance người dùng tự nhập
-                                local safePosition = nape.CFrame * CFrame.new(0, safeHeight, safeDistance)
-                                rootPart.CFrame = safePosition
-                            end
+                    -- 2. Auto Attack tốc độ cao
+                    if autoAttackEnabled and rootPart then
+                        local distance = (nape.Position - rootPart.Position).Magnitude
+                        if distance < 200 then
+                            local safePosition = nape.CFrame * CFrame.new(0, safeHeight, safeDistance)
+                            rootPart.CFrame = safePosition
                         end
                     end
                 end
@@ -117,13 +114,13 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateToggle({
-    Name = "Auto Attack Titan (Tự động bám gáy)",
+    Name = "Auto Attack Titan (Tốc độ cao)",
     CurrentValue = false,
     Flag = "auto_attack_toggle",
     Callback = function(Value)
         autoAttackEnabled = Value
         if Value then
-            notify("Auto Attack", "Đã bật tự động bám gáy an toàn!")
+            notify("Auto Attack", "Đã bật tốc độ chém cực nhanh!")
         else
             notify("Auto Attack", "Đã tắt tự động chém.")
         end

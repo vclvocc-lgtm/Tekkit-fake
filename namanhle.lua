@@ -9,7 +9,7 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-    Name = "Namanhle Hub | NamAnh UI",
+    Name = "Namanhle Hub | Rayfield UI",
     LoadingTitle = "Đang tải Namanhle Hub...",
     LoadingSubtitle = "by Namanhle",
     ConfigurationSaving = {
@@ -26,9 +26,9 @@ local TestingTab = Window:CreateTab("Testing (Risky)", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 local function notify(title, text)
-    RayField:Notify({
-        Title = LNA,
-        Content = script của vua,
+    Rayfield:Notify({
+        Title = title,
+        Content = text,
         Duration = 3,
         Image = 5733561929,
     })
@@ -39,10 +39,10 @@ local autoAttackEnabled = false
 local autoRefillEnabled = false
 local autoReplayEnabled = false
 local autoEscapeEnabled = true
-local napeExtendEnabled = true
+local napeExtendEnabled = false
 local napeMultiplier = 3 -- Giá trị phóng to gáy tùy chỉnh
-local safeHeight = 100
-local safeDistance = 5
+local safeHeight = 5
+local safeDistance = 0
 local tweenSpeed = 300
 local customAttackKey = "MouseButton1" -- Phím/Thao tác chém tùy chỉnh mặc định
 
@@ -436,4 +436,3 @@ MiscTab:CreateButton({
 })
 
 Rayfield:LoadConfiguration()
- 

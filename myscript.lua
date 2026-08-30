@@ -1,9 +1,4 @@
--- Đảm bảo game đã load hoàn toàn
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
--- Load thư viện Rayfield UI an toàn
+-- Kiểm tra và load Rayfield UI an toàn
 local success, Rayfield = pcall(function()
     return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 end)
@@ -14,12 +9,12 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-    Name = "Tekkit Hub | Rayfield UI",
-    LoadingTitle = "Tekkit Hub đang khởi động...",
-    LoadingSubtitle = "by Tekkit",
+    Name = "Namanhle Hub | Rayfield UI",
+    LoadingTitle = "Đang tải Namanhle Hub...",
+    LoadingSubtitle = "by Namanhle",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "TekkitHub",
+        FolderName = "NamanhleHub",
         FileName = "Config"
     },
     KeySystem = false,
@@ -78,27 +73,21 @@ MainTab:CreateToggle({
     Name = "Auto Grab Escape",
     CurrentValue = false,
     Flag = "escape_toggle",
-    Callback = function(Value)
-        -- Logic Auto Grab Escape
-    end,
+    Callback = function(Value) end,
 })
 
 MainTab:CreateToggle({
     Name = "Blade Refill",
     CurrentValue = false,
     Flag = "blade_toggle",
-    Callback = function(Value)
-        -- Logic Blade Refill
-    end,
+    Callback = function(Value) end,
 })
 
 MainTab:CreateToggle({
     Name = "Nape Extend",
     CurrentValue = false,
     Flag = "extend_toggle",
-    Callback = function(Value)
-        -- Logic Nape Extend
-    end,
+    Callback = function(Value) end,
 })
 
 MainTab:CreateInput({
@@ -110,7 +99,7 @@ MainTab:CreateInput({
     Callback = function(Text)
         local num = tonumber(Text)
         if num and num >= 0 and num <= 2 then
-            -- Xử lý giá trị multi
+            -- Xử lý multi
         end
     end,
 })
@@ -130,7 +119,7 @@ TestingTab:CreateButton({
             root.CFrame = CFrame.new(refill.Position + Vector3.new(0, 2, 0))
             notify("Thành công", "Đã dịch chuyển tới trạm nạp khí!")
         else
-            notify("Lỗi", "Không tìm thấy điểm nạp khí hoặc chưa vào trận!")
+            notify("Lỗi", "Không tìm thấy điểm nạp khí!")
         end
     end,
 })

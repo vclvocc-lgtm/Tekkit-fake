@@ -45,12 +45,11 @@ local safeHeight = 5
 local safeDistance = 0
 local tweenSpeed = 300
 
-local VirtualUser = game:GetService("VirtualUser")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 -- ==========================================
--- HÀM TWEEN MƯỢT CHỐNG RUNG TỐI ƯU TUYỆT ĐỐI
+-- HÀM TWEEN MƯỢT CHỐNG RUNG (ĐÃ TỐI ƯU KHÔNG KẸT CHUỘT)
 -- ==========================================
 local activeTween = nil
 local function smoothTweenTo(targetCFrame)
@@ -71,7 +70,6 @@ local function smoothTweenTo(targetCFrame)
         return
     end
 
-    -- Nếu đang tween thì giữ nguyên luồng để chuyển động mượt mà không bị ngắt quãng
     if activeTween then return end
 
     local timeVal = distance / tweenSpeed
@@ -114,7 +112,7 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 2. Xử lý Auto Attack (Săn toàn map + Tween chống rung + Tự chém)
+    -- 2. Xử lý Auto Attack (Săn toàn map + Tween chống rung + Tự kích hoạt vũ khí chém không kẹt chuột)
     if autoAttackEnabled and rootPart and titans then
         pcall(function()
             local closestNape = nil
@@ -140,15 +138,11 @@ RunService.Heartbeat:Connect(function()
                 local targetCFrame = closestNape.CFrame * CFrame.new(0, safeHeight, safeDistance)
                 smoothTweenTo(targetCFrame)
 
-                -- Tự động chém
+                -- Tự động kích hoạt vũ khí (Tool) để chém mượt mà, KHÔNG gây kẹt chuột/UI
                 local tool = character:FindFirstChildOfClass("Tool")
                 if tool then
                     tool:Activate()
                 end
-                
-                VirtualUser:Button1Down(Vector2.new(0,0))
-                task.wait(0.05)
-                VirtualUser:Button1Up(Vector2.new(0,0))
             end
         end)
     end

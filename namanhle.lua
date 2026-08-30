@@ -39,7 +39,7 @@ local autoAttackEnabled = false
 local autoRefillEnabled = false
 local autoReplayEnabled = false
 local napeExtendEnabled = false
-local napeMultiValue = 5 -- Mặc định to hơn hẳn để đứng trên đầu chém thoải mái
+local napeMultiValue = 2
 local safeHeight = 5
 local safeDistance = 0
 
@@ -50,7 +50,7 @@ local function tweenTo(targetCFrame, speed)
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
 
-    speed = speed or 300 -- Tốc độ tween
+    speed = speed or 300
     local distance = (targetCFrame.Position - rootPart.Position).Magnitude
     local timeVal = distance / speed
     
@@ -59,22 +59,76 @@ local function tweenTo(targetCFrame, speed)
     tween:Play()
 end
 
--- Vòng lặp chính xử lý Auto Attack, Nape Extend, Auto Refill, Auto Replay
+-- ==========================================
+-- LUỒNG CHẠY NGẦM ĐƯỢC TỐI ƯU HÓA CHỐNG LỖI KẸT
+-- ==========================================
+
+-- 1. Luồng xử lý Auto Attack & Nape Extend (Chạy liên tục bằng Heartbeat nhưng kiểm tra kỹ trạng thái)
+game:GetService("RunService").Heartbeat:Connect(function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    local titans = workspace:FindFirstChild("Titans")
+    
+    -- Xử lý Nape Extend (Chỉ chạy khi bật)
+    if titans then
+        for _, titan in pairs(titans:GetChildren()) do
+            if titan:IsA("Model") then
+                local hitboxes = titan:FindFirstChild("Hitboxes")
+                local hit = hitboxes and hitboxes:FindFirstChild("Hit")
+                local nape = hit and hit:FindFirstChild("Nape")
+                
+                if nape then
+                    if napeExtendEnabled then
+                        nape.Size = Vector3.new(10 * napeMultiValue, 10 * napeMultiValue, 10 * napeMultiValue)
+                        nape.Transparency = 0.7
+                    else
+                        nape.Size = Vector3.new(3, 3, 3)
+                        nape.Transparency = 0.96
+                    end
+                end
+            end
+        end
+    end
+
+    -- Xử lý Auto Attack (Chỉ chạy khi bật Toggle)
+    if autoAttackEnabled and rootPart and titans then
+        pcall(function()
+            for _, titan in pairs(titans:GetChildren()) do
+                if titan:IsA("Model") then
+                    local hitboxes = titan:FindFirstChild("Hitboxes")
+                    local hit = hitboxes and hitboxes:FindFirstChild("Hit")
+                    local nape = hit and hit:FindFirstChild("Nape")
+                    
+                    if nape then
+                        local targetCFrame = nape.CFrame * CFrame.new(0, safeHeight, safeDistance)
+                        tweenTo(targetCFrame, 350)
+                        
+                        -- Tự động chém
+                        local tool = character:FindFirstChildOfClass("Tool")
+                        if tool then
+                            tool:Activate()
+                        end
+                        break -- Chỉ xử lý 1 titan gần nhất mỗi frame để mượt game
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- 2. Luồng xử lý Auto Replay & Auto Refill (Chạy định kỳ nhẹ nhàng)
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(1) do
         pcall(function()
             local player = game.Players.LocalPlayer
-            local character = player.Character
-            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character and character:FindFirstChild("Humanoid")
             
-            -- 1. Tính năng Auto Replay (Tự động chơi lại khi hết ván)
+            -- Auto Replay
             if autoReplayEnabled then
                 for _, uiObj in pairs(player.PlayerGui:GetDescendants()) do
                     if uiObj:IsA("TextButton") or uiObj:IsA("ImageButton") then
                         local text = uiObj.Text:lower()
                         if text:find("replay") or text:find("play again") or text:find("tiếp tục") or text:find("chơi lại") then
-                            -- Giả lập click nút chơi lại
                             for _, connection in pairs(getconnections(uiObj.MouseButton1Click)) do
                                 connection:Fire()
                             end
@@ -83,67 +137,24 @@ task.spawn(function()
                 end
             end
 
-            -- 2. Tính năng Auto Refill (Tự động nạp gas/kiếm khi hết)
-            if autoRefillEnabled and rootPart then
-                -- Kiểm tra nếu gas hoặc kiếm yếu (bạn có thể tinh chỉnh điều kiện nhận biết trong game)
-                local needsRefill = false
-                pcall(function()
-                    -- Giả sử check chỉ số gas nếu có, hoặc luôn quét trạm nạp khi ở gần hết
-                    if humanoid and humanoid.Health > 0 then
-                        -- Tự động tìm trạm nạp trên map
-                        local foundRefill = nil
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj.Name == "Refill" or obj.Name == "GasTank" or obj.Name == "Gas" then
-                                if obj:IsA("BasePart") then
-                                    foundRefill = obj
-                                    break
-                                elseif obj:IsA("Model") and obj.PrimaryPart then
-                                    foundRefill = obj.PrimaryPart
-                                    break
-                                end
-                            end
-                        end
-                        -- Nếu tìm thấy và người chơi cách xa hoặc muốn chủ động nạp
-                        if foundRefill then
-                            -- Nếu thấy đồng hồ/thanh khí báo thấp (tùy game), ở đây làm mẫu tele khi bật auto refill
-                            -- rootPart.CFrame = CFrame.new(foundRefill.Position + Vector3.new(0, 3, 0))
-                        end
-                    end
-                end)
-            end
-
-            -- 3. Quét Titans toàn bản đồ cho Nape Extend và Auto Attack
-            local titans = workspace:FindFirstChild("Titans")
-            if titans and rootPart then
-                for _, titan in pairs(titans:GetChildren()) do
-                    if titan:IsA("Model") then
-                        local hitboxes = titan:FindFirstChild("Hitboxes")
-                        local hit = hitboxes and hitboxes:FindFirstChild("Hit")
-                        local nape = hit and hit:FindFirstChild("Nape")
-                        
-                        if nape then
-                            -- Phóng to Hitbox gáy cực lớn để đứng trên đầu vẫn chém được
-                            if napeExtendEnabled then
-                                nape.Size = Vector3.new(10 * napeMultiValue, 10 * napeMultiValue, 10 * napeMultiValue)
-                                nape.Transparency = 0.7
-                            else
-                                nape.Size = Vector3.new(3, 3, 3)
-                            end
-                            
-                            -- Auto Attack toàn bản đồ + Tween mượt mà + Tự động chém
-                            if autoAttackEnabled then
-                                local targetCFrame = nape.CFrame * CFrame.new(0, safeHeight, safeDistance)
-                                -- Tween tới gáy Titan ở bất cứ khoảng cách nào trên bản đồ
-                                tweenTo(targetCFrame, 350)
-                                
-                                -- Tự động kích hoạt hành động chém (M1 / Tool activation)
-                                local tool = character:FindFirstChildOfClass("Tool")
-                                if tool then
-                                    tool:Activate()
-                                end
+            -- Auto Refill check
+            if autoRefillEnabled then
+                local character = player.Character
+                local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local foundRefill = nil
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj.Name == "Refill" or obj.Name == "GasTank" or obj.Name == "Gas" then
+                            if obj:IsA("BasePart") then
+                                foundRefill = obj
+                                break
+                            elseif obj:IsA("Model") and obj.PrimaryPart then
+                                foundRefill = obj.PrimaryPart
+                                break
                             end
                         end
                     end
+                    -- Nếu cần nạp có thể tự tele ở đây tùy logic game
                 end
             end
         end)
@@ -190,11 +201,11 @@ MainTab:CreateToggle({
     CurrentValue = false,
     Flag = "auto_attack_toggle",
     Callback = function(Value)
-        autoAttackEnabled = Value
+        autoAttackEnabled = Value -- Gán trực tiếp trạng thái bật/tắt vào biến
         if Value then
-            notify("Auto Attack", "Đã bật tự động săn & chém Titan toàn map!")
+            notify("Auto Attack", "Đã bật tự động săn & chém Titan!")
         else
-            notify("Auto Attack", "Đã tắt.")
+            notify("Auto Attack", "Đã tắt hoàn toàn.")
         end
     end,
 })
@@ -206,7 +217,7 @@ MainTab:CreateToggle({
     Callback = function(Value)
         autoRefillEnabled = Value
         if Value then
-            notify("Auto Refill", "Đã bật tự động tìm trạm nạp!")
+            notify("Auto Refill", "Đã bật tự động nạp!")
         else
             notify("Auto Refill", "Đã tắt tự động nạp.")
         end
@@ -244,9 +255,9 @@ MainTab:CreateToggle({
     CurrentValue = false,
     Flag = "extend_toggle",
     Callback = function(Value)
-        napeExtendEnabled = Value
+        napeExtendEnabled = Value -- Gán trực tiếp trạng thái
         if Value then
-            notify("Nape Extend", "Đã phóng to gáy cực đại để đứng trên đầu chém!")
+            notify("Nape Extend", "Đã phóng to gáy cực đại!")
         else
             notify("Nape Extend", "Đã trả về mặc định.")
         end
@@ -254,16 +265,15 @@ MainTab:CreateToggle({
 })
 
 MainTab:CreateInput({
-    Name = "Nape Multi (1 - 300)",
+    Name = "Nape Multi (1 - 5)",
     CurrentValue = "2",
-    PlaceholderText = "Nhập từ 1 đến 300",
+    PlaceholderText = "Nhập từ 1 đến 5",
     RemoveTextAfterFocusLost = false,
     Flag = "multi_input",
     Callback = function(Text)
         local num = tonumber(Text)
-        if num and num >= 1 and num <= 300 then
+        if num and num >= 1 and num <= 5 then
             napeMultiValue = num
-            notify("Cài đặt", "Độ rộng gáy đã tăng gấp " .. num)
         end
     end,
 })

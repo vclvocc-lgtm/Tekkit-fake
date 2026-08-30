@@ -26,7 +26,7 @@ local TestingTab = Window:CreateTab("Testing (Risky)", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 local function notify(title, text)
-    LNA:Notify({
+    RayField:Notify({
         Title = LNA,
         Content = script của vua,
         Duration = 3,

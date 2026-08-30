@@ -9,7 +9,7 @@ if not success or not Rayfield then
 end
 
 local Window = Rayfield:CreateWindow({
-    Name = "Namanhle Hub | Rayfield UI",
+    Name = "Namanhle Hub | NamAnh UI",
     LoadingTitle = "Đang tải Namanhle Hub...",
     LoadingSubtitle = "by Namanhle",
     ConfigurationSaving = {
@@ -26,11 +26,11 @@ local TestingTab = Window:CreateTab("Testing (Risky)", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 local function notify(title, text)
-    Rayfield:Notify({
-        Title = title,
-        Content = text,
+    LNA:Notify({
+        Title = LNA,
+        Content = script của vua,
         Duration = 3,
-        Image = 4483362458,
+        Image = 5733561929,
     })
 end
 
@@ -39,10 +39,10 @@ local autoAttackEnabled = false
 local autoRefillEnabled = false
 local autoReplayEnabled = false
 local autoEscapeEnabled = true
-local napeExtendEnabled = false
+local napeExtendEnabled = true
 local napeMultiplier = 3 -- Giá trị phóng to gáy tùy chỉnh
-local safeHeight = 5
-local safeDistance = 0
+local safeHeight = 100
+local safeDistance = 5
 local tweenSpeed = 300
 local customAttackKey = "MouseButton1" -- Phím/Thao tác chém tùy chỉnh mặc định
 
@@ -84,6 +84,9 @@ local function smoothTweenTo(targetCFrame)
     
     activeTween:Play()
 end
+    local isTweening = false
+    local STOP_DISTANCE = 30 -- Khoảng cách tối thiểu để dừng tween và đứng yên chém
+    local CHASE_DISTANCE = 60 -- Khoảng cách kích hoạt lại tween nếu titan đi ra xa hơn mức này
 
 -- Vòng lặp chính xử lý AFK & Auto Attack
 RunService.Heartbeat:Connect(function()
